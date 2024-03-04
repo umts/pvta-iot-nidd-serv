@@ -67,12 +67,12 @@ ARG unit_config_args=\
 RUN set -ex \
   && apt-get update \
   && if [ "$debug" = "true" ]; then \
-    apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial build-essential \
+    apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential \
     libssl-dev libpcre2-dev curl pkg-config vim libcurl4-openssl-dev \
     && echo "alias ls='ls -F --color=auto'" >> /root/.bashrc \
     && echo "alias grep='grep -nI --color=auto'" >> /root/.bashrc; \
   else \
-    apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial build-essential \
+    apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential \
     libssl-dev libpcre2-dev curl pkg-config libcurl4-openssl-dev; \
   fi
 
@@ -120,7 +120,7 @@ RUN set -ex \
        niddss
 
 # Clone Unit
-RUN ["hg", "clone", "-u", "1.31.1-1", "https://hg.nginx.org/unit", "$unit_clone_dir"]
+RUN set -ex && git clone --depth 1 -b 1.32.0-1 https://github.com/nginx/unit $unit_clone_dir
 
 WORKDIR $unit_clone_dir
 

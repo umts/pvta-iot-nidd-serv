@@ -94,7 +94,7 @@ COPY --link ./docker-entrypoint.sh /usr/local/bin/
 RUN --mount=type=secret,id=vzw_secrets.h set -x \
 # Install dependencies
   && apt-get update \
-  && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial \
+  && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git \
   build-essential libssl-dev libpcre2-dev curl pkg-config libcurl4-openssl-dev \
 # Prepare dirs, group, and user
   && mkdir -p \
@@ -134,7 +134,7 @@ RUN --mount=type=secret,id=vzw_secrets.h set -x \
     --shell /bin/false \
     niddss \
 # Clone NGINX Unit
-  && hg clone -u 1.31.1-1 https://hg.nginx.org/unit $unit_clone_dir \
+  && git clone --depth 1 -b 1.32.0-1 https://github.com/nginx/unit $unit_clone_dir \
 # Configure and make unitd
   && cd $unit_clone_dir \
   && ./configure $unit_config_args --cc-opt="$(eval $cc_opt)" --ld-opt="$(eval $ld_opt)" \
