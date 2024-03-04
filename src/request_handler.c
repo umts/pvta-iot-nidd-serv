@@ -203,19 +203,22 @@ static void stop_request_handler(
 
   for (int i = 0; i < stop.routes_size; i++) {
     struct RouteDirection route_direction = stop.route_directions[i];
-
-    *p++ = '{';
-    p = json_obj_id_str(p, "direction", strlen("direction"));
-    p = json_obj_value_str(p, &route_direction.direction_code, 1);
-    *p++ = ',';
-
-    p = json_obj_id_str(p, "id", strlen("id"));
-    sprintf(id_str, "%d", route_direction.id);
-    p = json_obj_value_str(p, id_str, strlen(id_str));
-    *p++ = ',';
-
     for (int j = 0; j < route_direction.departures_size; j++) {
       struct Departure departure = route_direction.departures[j];
+
+      if (j | i) {
+        *p++ = ',';
+      }
+
+      *p++ = '{';
+      p = json_obj_id_str(p, "direction", strlen("direction"));
+      p = json_obj_value_str(p, &route_direction.direction_code, 1);
+      *p++ = ',';
+
+      p = json_obj_id_str(p, "id", strlen("id"));
+      sprintf(id_str, "%d", route_direction.id);
+      p = json_obj_value_str(p, id_str, strlen(id_str));
+      *p++ = ',';
 
       min = minutes_to_departure(&departure);
       p = json_obj_id_str(p, "mtd", strlen("mtd"));
@@ -226,10 +229,7 @@ static void stop_request_handler(
           p, "text", strlen("text"), departure.display_text,
           strlen(departure.display_text)
       );
-    }
-    *p++ = '}';
-    if (i < (stop.routes_size - 1)) {
-      *p++ = ',';
+      *p++ = '}';
     }
   }
   *p++ = ']';
