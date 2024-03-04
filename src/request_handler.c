@@ -26,6 +26,11 @@
 #define TEXT_PLAIN_UTF8 "text/plain; charset=utf-8"
 #define JSON_UTF8 "application/json; charset=utf-8"
 
+static inline char *copy(char *p, const void *src, uint32_t len) {
+  memcpy(p, src, len);
+  return p + len;
+}
+
 static unsigned int minutes_to_departure(Departure *departure) {
   long edt_ms = departure->etd;
   struct timespec ts;
@@ -88,6 +93,53 @@ static int response_init(
   return 0;
 }
 
+void vzw_request_handler(
+    nxt_unit_request_info_t *req_info, void *path, int rc
+) {
+  char *p;
+  // ssize_t res;
+  nxt_unit_buf_t *buf;
+
+  char vzw_auth_token[50] = "\0";
+  char vzw_m2m_token[50] = "\0";
+
+  rc = response_init(req_info, rc, 200, TEXT_PLAIN_UTF8);
+  if (rc == 1) {
+    goto fail;
+  }
+
+  rc = get_vzw_tokens(&vzw_auth_token[0], &vzw_m2m_token[0]);
+  if (nxt_slow_path(rc != NXT_UNIT_OK)) {
+    nxt_unit_req_error(req_info, "Failed to get VZW credentials");
+    goto fail;
+  }
+
+  buf = nxt_unit_response_buf_alloc(
+      req_info, ((req_info->request_buf->end - req_info->request_buf->start) +
+                 strlen("Hello world!\n"))
+  );
+
+  if (nxt_slow_path(buf == NULL)) {
+    rc = NXT_UNIT_ERROR;
+    goto fail;
+  }
+
+  p = buf->free;
+
+  p = copy(p, "Hello world!", strlen("Hello world!"));
+  *p++ = '\n';
+
+  buf->free = p;
+  rc = nxt_unit_buf_send(buf);
+  if (nxt_slow_path(rc != NXT_UNIT_OK)) {
+    nxt_unit_req_error(req_info, "Failed to send buffer");
+    goto fail;
+  }
+
+fail:
+  nxt_unit_request_done(req_info, rc);
+}
+
 static void stop_request_handler(
     nxt_unit_request_info_t *req_info, void *path, int rc
 ) {
@@ -111,12 +163,6 @@ static void stop_request_handler(
   if (rc == 1) {
     goto fail;
   }
-
-  // rc = get_vzw_tokens(&vzw_auth_token[0], &vzw_m2m_token[0]);
-  // if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-  //   nxt_unit_req_error(req_info, "Failed to get VZW credentials");
-  //   goto fail;
-  // }
 
   rc = http_request_stop_json(req_info, json_buf, path);
   if (nxt_slow_path(rc != NXT_UNIT_OK)) {
@@ -208,6 +254,8 @@ void request_router(nxt_unit_request_info_t *req_info) {
 
   if (strncmp(path, "/stop/", 6) == 0) {
     stop_request_handler(req_info, path, rc);
+  } else if (strncmp(path, "/vzw", 4) == 0) {
+    vzw_request_handler(req_info, path, rc);
   } else {
     response_init(req_info, rc, 404, TEXT_PLAIN_UTF8);
     if (rc == 1) {

@@ -10,7 +10,10 @@
   "routes": [
     {
       "match": {
-        "uri": "~^/stop/\\d+"
+        "uri": [
+          "~^/stop/\\d+",
+          "/vzw*"
+        ]
       },
       "action": {
         "pass": "applications/c-app"
