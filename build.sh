@@ -28,7 +28,7 @@ shift $((OPTIND-1))
 
 cd $dir
 
-(cd $dir/modules/vzw-nidd-front-end && middleman build --clean)
+(cd $dir/modules/vzw-nidd-front-end && bundle exec middleman build --clean)
 rm -rf ./assets
 mv $dir/modules/vzw-nidd-front-end/build $dir/assets
 
