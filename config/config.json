@@ -12,28 +12,29 @@
       "match": {
         "uri": [
           "~^/stop/\\d+",
+          "/firmware*",
           "/vzw*"
         ]
       },
       "action": {
-        "pass": "applications/c-app"
+        "pass": "applications/iots"
       }
     },
     {
       "action": {
         "share": [
-          "/srv/$uri",
-          "/srv/$uri.html"
+          "/srv/assets/$uri",
+          "/srv/assets/$uri.html"
         ]
       }
     }
   ],
   "applications": {
-    "c-app": {
+    "iots": {
       "type": "external",
       "working_directory": "/srv",
-      "executable": "/srv/app",
-      "user": "niddss"
+      "executable": "/usr/bin/iots",
+      "user": "iots"
     }
   }
 }

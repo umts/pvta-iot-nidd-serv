@@ -33,11 +33,11 @@ rm -rf ./assets
 mv $dir/modules/vzw-nidd-front-end/build $dir/assets
 
 if [ $minsize ]; then
-  docker build -t niddss:dev --secret id=vzw_secrets.h,src=$dir/config/vzw_secrets.h -f $dir/Dockerfile.minsize $dir
+  docker build -t iots:dev --secret id=vzw_secrets.h,src=$dir/config/vzw_secrets.h -f $dir/Dockerfile.minsize $dir
 elif [ $debug ]; then
-  docker build -t niddss:dev --secret id=vzw_secrets.h,src=$dir/config/vzw_secrets.h --build-arg debug=true $dir
+  docker build -t iots:dev --secret id=vzw_secrets.h,src=$dir/config/vzw_secrets.h --build-arg debug=true $dir
 else
-  docker build -t niddss:dev --secret id=vzw_secrets.h,src=$dir/config/vzw_secrets.h $dir
+  docker build -t iots:dev --secret id=vzw_secrets.h,src=$dir/config/vzw_secrets.h $dir
 fi
 
 if [ $prune ]; then
@@ -45,7 +45,7 @@ if [ $prune ]; then
 fi
 
 if [ $docker_run ]; then
-  docker run --rm -p 80:80 --name niddss_dev niddss:dev
+  docker run --rm -p 80:80 --name iots_dev iots:dev
 fi
 
 cd -

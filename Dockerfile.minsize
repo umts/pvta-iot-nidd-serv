@@ -22,11 +22,17 @@ ARG unit_group="unit"
 ARG unit_user="unit"
 ARG unit_clone_dir="$prefix/src/unit"
 
+ARG srv_dir="/srv"
+ARG app_assets_dir="$srv_dir/assets"
+ARG app_bin_dir="$bin_dir"
 ARG app_clone_dir="$prefix/src/app"
-ARG app_bin_dir="/srv"
 ARG app_src_dir="$app_clone_dir/src"
 ARG app_include_dir="$app_clone_dir/include"
 ARG app_lib_dir="$app_clone_dir/lib"
+ARG app_group="iots"
+ARG app_user="iots"
+ARG app_firmware_dir="$srv_dir/firmware"
+
 ARG ncpu="getconf _NPROCESSORS_ONLN"
 
 ENV UNIT_RUN_STATE_DIR="$local_state_dir/run/unit"
@@ -70,21 +76,19 @@ RUN set -x \
     $app_clone_dir/modules/jsmn \
     $app_clone_dir/modules/nibble-and-a-half \
     /docker-entrypoint.d \
-    $app_bin_dir/images \
-    $app_bin_dir/javascripts \
-    $app_bin_dir/stylesheets
-
+    $app_assets_dir/images \
+    $app_assets_dir/javascripts \
+    $app_assets_dir/stylesheets
 # Copy app source files
 COPY --link ./src/* "$app_src_dir"
 COPY --link ./include/* "$app_include_dir"
 COPY --link ./Makefile "$app_clone_dir"
 COPY --link ./modules/jsmn/* "$app_clone_dir"/modules/jsmn
 COPY --link ./modules/nibble-and-a-half/* "$app_clone_dir"/modules/nibble-and-a-half
-COPY --link ./assets/*.html "$app_bin_dir"
-COPY --link ./assets/images/* "$app_bin_dir/images"
-COPY --link ./assets/javascripts/* "$app_bin_dir/javascripts"
-COPY --link ./assets/stylesheets/* "$app_bin_dir/stylesheets"
-
+COPY --link ./assets/*.html "$app_assets_dir"
+COPY --link ./assets/images/* "$app_assets_dir/images"
+COPY --link ./assets/javascripts/* "$app_assets_dir/javascripts"
+COPY --link ./assets/stylesheets/* "$app_assets_dir/stylesheets"
 # Copy initial config
 COPY --link config/config.json /docker-entrypoint.d/
 
@@ -109,6 +113,7 @@ RUN --mount=type=secret,id=vzw_secrets.h set -x \
     $log_dir \
     $UNIT_RUN_STATE_DIR \
     $tmp_dir \
+    $app_firmware_dir \
     $app_src_dir \
     $app_include_dir \
     $app_lib_dir \
@@ -117,6 +122,7 @@ RUN --mount=type=secret,id=vzw_secrets.h set -x \
     $app_clone_dir/modules/nibble-and-a-half \
   && mkdir -p -m=700 $lib_state_dir \
   && groupadd --gid 999 $unit_group \
+  && groupadd --gid 1000 $app_group \
   && useradd \
     --uid 999 \
     --gid $unit_group \
@@ -126,15 +132,17 @@ RUN --mount=type=secret,id=vzw_secrets.h set -x \
     --shell /bin/false \
     $unit_user \
   && useradd \
-    --uid 1001 \
-    --gid $unit_group \
+    --uid 1000 \
+    --gid $app_group \
     --no-create-home \
     --home /nonexistent \
-    --comment "niddss app user" \
+    --comment "iot server app user" \
     --shell /bin/false \
-    niddss \
+    $app_user \
+  && chown root:$app_group $app_firmware_dir \
+  && chmod -R 775 $app_firmware_dir \
 # Clone NGINX Unit
-  && git clone --depth 1 -b 1.32.0-1 https://github.com/nginx/unit $unit_clone_dir \
+  && git clone --depth 1 -b 1.32.1-1 https://github.com/nginx/unit $unit_clone_dir \
 # Configure and make unitd
   && cd $unit_clone_dir \
   && ./configure $unit_config_args --cc-opt="$(eval $cc_opt)" --ld-opt="$(eval $ld_opt)" \

@@ -24,11 +24,17 @@ ARG unit_group="unit"
 ARG unit_user="unit"
 ARG unit_clone_dir="$prefix/src/unit"
 
+ARG srv_dir="/srv"
+ARG app_assets_dir="$srv_dir/assets"
+ARG app_bin_dir="$bin_dir"
 ARG app_clone_dir="$prefix/src/app"
-ARG app_bin_dir="/srv"
 ARG app_src_dir="$app_clone_dir/src"
 ARG app_include_dir="$app_clone_dir/include"
 ARG app_lib_dir="$app_clone_dir/lib"
+ARG app_group="iots"
+ARG app_user="iots"
+ARG app_firmware_dir="$srv_dir/firmware"
+
 ARG ncpu="getconf _NPROCESSORS_ONLN"
 
 ENV UNIT_RUN_STATE_DIR="$local_state_dir/run/unit"
@@ -96,12 +102,14 @@ RUN set -ex \
     $app_clone_dir/config \
     $app_clone_dir/modules/jsmn \
     $app_clone_dir/modules/nibble-and-a-half \
-    $app_bin_dir/images \
-    $app_bin_dir/javascripts \
-    $app_bin_dir/stylesheets \
+    $app_firmware_dir \
+    $app_assets_dir/images \
+    $app_assets_dir/javascripts \
+    $app_assets_dir/stylesheets \
     /docker-entrypoint.d \
   && mkdir -p -m=700 $lib_state_dir \
   && groupadd --gid 999 $unit_group \
+  && groupadd --gid 1000 $app_group \
   && useradd \
        --uid 999 \
        --gid $unit_group \
@@ -111,16 +119,18 @@ RUN set -ex \
        --shell /bin/false \
        $unit_user \
   && useradd \
-       --uid 1001 \
-       --gid $unit_group \
+       --uid 1000 \
+       --gid $app_group \
        --no-create-home \
        --home /nonexistent \
-       --comment "niddss app user" \
+       --comment "iot server app user" \
        --shell /bin/false \
-       niddss
+       $app_user \
+  && chown root:$app_group $app_firmware_dir \
+  && chmod -R 775 $app_firmware_dir
 
 # Clone Unit
-RUN set -ex && git clone --depth 1 -b 1.32.0-1 https://github.com/nginx/unit $unit_clone_dir
+RUN set -ex && git clone --depth 1 -b 1.32.1-1 https://github.com/nginx/unit $unit_clone_dir
 
 WORKDIR $unit_clone_dir
 
@@ -158,10 +168,10 @@ COPY --link ./include/* "$app_include_dir"
 COPY --link ./Makefile "$app_clone_dir"
 COPY --link ./modules/jsmn/* "$app_clone_dir"/modules/jsmn
 COPY --link ./modules/nibble-and-a-half/* "$app_clone_dir"/modules/nibble-and-a-half
-COPY --link ./assets/*.html "$app_bin_dir"
-COPY --link ./assets/images/* "$app_bin_dir/images"
-COPY --link ./assets/javascripts/* "$app_bin_dir/javascripts"
-COPY --link ./assets/stylesheets/* "$app_bin_dir/stylesheets"
+COPY --link ./assets/*.html "$app_assets_dir"
+COPY --link ./assets/images/* "$app_assets_dir/images"
+COPY --link ./assets/javascripts/* "$app_assets_dir/javascripts"
+COPY --link ./assets/stylesheets/* "$app_assets_dir/stylesheets"
 
 RUN --mount=type=secret,id=vzw_secrets.h set -x \
   && cp /run/secrets/vzw_secrets.h config/vzw_secrets.h

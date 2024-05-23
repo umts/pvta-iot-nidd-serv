@@ -19,10 +19,8 @@
 #include "curl_callbacks.h"
 #include "json_helpers.h"
 
-#define REC_BUF_SIZE 320
-#define REC_HEADER_SIZE 640
-// #define REC_BUF_SIZE 1024
-// #define REC_HEADER_SIZE 1024
+#define REC_BUF_SIZE 1024
+#define REC_HEADER_SIZE 1024
 
 // char *stop_to_nidd_str(Stop *stop) {}
 

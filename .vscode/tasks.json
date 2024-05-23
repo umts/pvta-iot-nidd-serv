@@ -4,27 +4,15 @@
     {
       "type": "shell",
       "label": "Build",
-      "dependsOn": "Docker buildx prune",
-      "dependsOrder": "sequence",
-      "command": "docker",
-      "args": [
-        "buildx",
-        "build",
-        "--secret",
-        "id=vzw_secrets.h,src=${workspaceFolder}/config/vzw_secrets.h",
-        "-t",
-        "niddss:dev",
-        "--build-arg",
-        "debug=${input:build-debug}",
-        "${workspaceFolder}"
-      ],
+      "command": "${workspaceFolder}/build.sh",
+      "args": [],
       "options": {},
       "problemMatcher": [],
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "detail": "docker buildx prune & build"
+      "detail": "Run Docker build script"
     },
     {
       "type": "shell",
@@ -36,10 +24,10 @@
         "run",
         "--rm",
         "-p",
-        "8081:80",
+        "80:80",
         "--name",
-        "niddss_dev",
-        "niddss:dev"
+        "iots_dev",
+        "iots:dev"
       ],
       "options": {},
       "group": {
@@ -84,7 +72,7 @@
       "args": [
         "exec",
         "-it",
-        "niddss_dev",
+        "iots_dev",
         "/bin/bash"
       ],
       "options": {},
@@ -92,16 +80,5 @@
       "detail": "Docker interactive bash shell",
       "problemMatcher": []
     },
-  ],
-  "inputs": [
-    {
-      "id": "build-debug",
-      "type": "pickString",
-      "description": "Build with debugging",
-      "options": [
-        "false",
-        "true"
-      ]
-    }
   ]
 }
