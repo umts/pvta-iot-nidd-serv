@@ -4,6 +4,7 @@
 
 #ifndef VZW_CONNECT_H
 #define VZW_CONNECT_H
+#include <stop.h>
 
 /** @fn int stop_to_nidd(nxt_unit_request_info_t* req, Stop* stop)
  *  @brief Transforms the Stop departure info into a NIDD message.

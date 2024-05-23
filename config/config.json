@@ -11,8 +11,9 @@
     {
       "match": {
         "uri": [
-          "/vzw*",
-          "/firmware*"
+          "~^/stop/\\d+",
+          "/firmware*",
+          "/vzw*"
         ]
       },
       "action": {

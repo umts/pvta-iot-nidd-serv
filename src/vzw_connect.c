@@ -12,6 +12,7 @@
 #include <curl/header.h>
 #include <jsmn.h>
 #include <stddef.h>
+#include <stop.h>
 #include <string.h>
 
 #include "../config/vzw_secrets.h"

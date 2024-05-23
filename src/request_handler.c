@@ -16,6 +16,8 @@
 
 #include "../config/vzw_secrets.h"
 #include "firmware_requests.h"
+#include "http_get_stop.h"
+#include "parse_stop_json.h"
 #include "vzw_connect.h"
 
 #define CONTENT_TYPE "Content-Type"
@@ -27,6 +29,15 @@
 static inline char *copy(char *p, const void *src, uint32_t len) {
   memcpy(p, src, len);
   return p + len;
+}
+
+static unsigned int minutes_to_departure(Departure *departure) {
+  long edt_ms = departure->etd;
+  struct timespec ts;
+  timespec_get(&ts, TIME_UTC);
+
+  long time_ms = (long)(ts.tv_sec * 1000) + (long)(ts.tv_nsec / 1000000);
+  return (unsigned int)(edt_ms - time_ms) / 60000;
 }
 
 static int get_vzw_tokens(char *vzw_auth_token, char *vzw_m2m_token) {
@@ -110,6 +121,112 @@ void vzw_request_handler(nxt_unit_request_info_t *req_info, int rc) {
 
   p = copy(p, "Hello world!", strlen("Hello world!"));
   *p++ = '\n';
+
+  buf->free = p;
+  rc = nxt_unit_buf_send(buf);
+  if (nxt_slow_path(rc != NXT_UNIT_OK)) {
+    nxt_unit_req_error(req_info, "Failed to send buffer");
+    goto fail;
+  }
+
+fail:
+  nxt_unit_request_done(req_info, rc);
+}
+
+static void stop_request_handler(
+    nxt_unit_request_info_t *req_info, void *path, int rc
+) {
+  char *p;
+  nxt_unit_buf_t *buf;
+  unsigned int min;
+  char id_str[12];
+
+  static Stop stop = {.last_updated = 0};
+  stop.id = (char *)(path + 6);
+  size_t stop_size = sizeof(stop);
+
+  char vzw_auth_token[50] = "\0";
+  char vzw_m2m_token[50] = "\0";
+
+  /** HTTP response body buffer with size defined by the STOP_JSON_BUF_SIZE
+   * macro. */
+  char json_buf[STOP_JSON_BUF_SIZE] = "\0";
+
+  rc = response_init(req_info, rc, 200, JSON_UTF8);
+  if (rc == 1) {
+    goto fail;
+  }
+
+  rc = http_request_stop_json(req_info, json_buf, path);
+  if (nxt_slow_path(rc != NXT_UNIT_OK)) {
+    nxt_unit_req_alert(req_info, "http_request_routes failed");
+    goto fail;
+  }
+
+  rc = parse_stop_json(json_buf, &stop);
+
+  stop_size += sizeof(RouteDirection) * stop.routes_size;
+
+  for (int i = 0; i < stop.routes_size; i++) {
+    struct RouteDirection route_direction = stop.route_directions[i];
+    stop_size += sizeof(Departure) * route_direction.departures_size;
+  }
+
+  buf = nxt_unit_response_buf_alloc(
+      req_info,
+      ((req_info->request_buf->end - req_info->request_buf->start) + stop_size)
+  );
+
+  if (nxt_slow_path(buf == NULL)) {
+    rc = NXT_UNIT_ERROR;
+    goto fail;
+  }
+
+  p = buf->free;
+
+  *p++ = '{';
+  p = json_obj_id_str(p, stop.id, strlen(stop.id));
+  *p++ = '[';
+
+  p = buf->free;
+
+  *p++ = '{';
+  p = json_obj_id_str(p, stop.id, strlen(stop.id));
+  *p++ = '[';
+
+  for (int i = 0; i < stop.routes_size; i++) {
+    struct RouteDirection route_direction = stop.route_directions[i];
+    for (int j = 0; j < route_direction.departures_size; j++) {
+      struct Departure departure = route_direction.departures[j];
+
+      if (j | i) {
+        *p++ = ',';
+      }
+
+      *p++ = '{';
+      p = json_obj_id_str(p, "direction", strlen("direction"));
+      p = json_obj_value_str(p, &route_direction.direction_code, 1);
+      *p++ = ',';
+
+      p = json_obj_id_str(p, "id", strlen("id"));
+      sprintf(id_str, "%d", route_direction.id);
+      p = json_obj_value_str(p, id_str, strlen(id_str));
+      *p++ = ',';
+
+      min = minutes_to_departure(&departure);
+      p = json_obj_id_str(p, "mtd", strlen("mtd"));
+      p = json_obj_value_num(p, min);
+      *p++ = ',';
+
+      p = json_obj_str(
+          p, "text", strlen("text"), departure.display_text,
+          strlen(departure.display_text)
+      );
+      *p++ = '}';
+    }
+  }
+  *p++ = ']';
+  *p++ = '}';
 
   buf->free = p;
   rc = nxt_unit_buf_send(buf);
