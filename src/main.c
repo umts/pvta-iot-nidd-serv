@@ -101,9 +101,8 @@ int main(int argc, char **argv) {
     nxt_unit_free(ctx, threads);
   }
 
-  nxt_unit_done(ctx);
   curl_global_cleanup();
-
+  nxt_unit_done(ctx);
   nxt_unit_debug(NULL, "main worker done");
 
   return 0;

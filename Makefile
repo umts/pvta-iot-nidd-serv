@@ -1,15 +1,18 @@
 CC ?= gcc
 DIR ?= .
-app_bin_dir ?= /srv
+app_bin_dir ?= /usr/bin
+EXTRA_CFLAGS ?=
+EXTRA_LDFLAGS ?=
 
 CFLAGS ?= -O3 -fstack-protector-strong -Wall -Wextra -Wformat -Winline -Werror=format-security \
-	-D_FORTIFY_SOURCE=2 -march=native -fPIC -I$(DIR)/include
-LDFLAGS ?= -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie -L$(DIR) -L$(DIR)/lib -lc -lpthread -lcurl -lunit -lnaah64
+	-D_FORTIFY_SOURCE=2 -march=native -fPIC -I$(DIR)/include -fanalyzer $(EXTRA_CFLAGS)
+LDFLAGS ?= -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie -L$(DIR) -L$(DIR)/lib -lc -lpthread \
+	-lcurl -lunit -lnaah64 $(EXTRA_LDFLAGS)
 
 VPATH = $(DIR)/src:$(DIR)/include
 
 objects = main.o jsmn.o json_helpers.o http_get_stop.o curl_callbacks.o \
-	parse_stop_json.o vzw_connect.o request_handler.o
+	parse_stop_json.o vzw_connect.o request_handler.o firmware_requests.o
 
 all: jsmn.h base64.h libnaah64.a app
 
@@ -33,7 +36,7 @@ jsmn.h:
 	cp $(DIR)/modules/jsmn/jsmn.h $(DIR)/include
 
 install: app
-	cp $(DIR)/app $(app_bin_dir)
+	cp $(DIR)/app $(app_bin_dir)/iots
 
 clean:
 	rm -rf $(DIR)/app $(objects) $(DIR)/lib/libnaah64.a $(DIR)/include/jsmn.h $(DIR)/include/base64.h
