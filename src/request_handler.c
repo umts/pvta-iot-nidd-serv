@@ -1,15 +1,16 @@
 /** @headerfile request_handler.h */
 #include "request_handler.h"
 
-#include <nxt_unit_request.h>
-#include <nxt_unit_typedefs.h>
+#include <stdlib.h>
 
 #define JSMN_HEADER
 
 #include <config.h>
 #include <nxt_clang.h>
 #include <nxt_unit.h>
+#include <nxt_unit_request.h>
 #include <nxt_unit_sptr.h>
+#include <nxt_unit_typedefs.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -20,6 +21,7 @@
 #include "http_get_stop.h"
 #include "json_helpers.h"
 #include "parse_stop_json.h"
+#include "stop.h"
 #include "vzw_connect.h"
 
 #define CONTENT_TYPE "Content-Type"
@@ -150,22 +152,24 @@ static void stop_request_handler(
   char vzw_auth_token[50] = "\0";
   char vzw_m2m_token[50] = "\0";
 
-  /** HTTP response body buffer with size defined by the STOP_JSON_BUF_SIZE
-   * macro. */
-  char json_buf[STOP_JSON_BUF_SIZE] = "\0";
-
   rc = response_init(req_info, rc, 200, JSON_UTF8);
   if (rc == 1) {
     goto fail;
   }
 
-  rc = http_request_stop_json(req_info, json_buf, path);
-  if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-    nxt_unit_req_alert(req_info, "http_request_routes failed");
+  char *json_buf = http_request_stop_json(path);
+  if (json_buf == NULL) {
+    PRINTERR("http_request_routes failed");
     goto fail;
   }
 
+  PRINTDBG("JSON request done");
+
   rc = parse_stop_json(json_buf, &stop);
+
+  (void)free(json_buf);
+
+  PRINTDBG("parse JSON done");
 
   stop_size += sizeof(RouteDirection) * stop.routes_size;
 
@@ -233,7 +237,7 @@ static void stop_request_handler(
   buf->free = p;
   rc = nxt_unit_buf_send(buf);
   if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-    nxt_unit_req_error(req_info, "Failed to send buffer");
+    PRINTERR("Failed to send buffer");
     goto fail;
   }
 
@@ -329,7 +333,9 @@ void request_router(nxt_unit_request_info_t *req_info) {
 
   void *path = nxt_unit_sptr_get(rp);
 
-  if (strncmp(path, "/vzw", 4) == 0) {
+  if (strncmp(path, "/stop/", 6) == 0) {
+    stop_request_handler(req_info, path, rc);
+  } else if (strncmp(path, "/vzw", 4) == 0) {
     (void)vzw_request_handler(req_info, rc);
   } else if ((strncmp(path, "/firmware", 9) == 0)) {
     (void)firmware_request_handler(req_info, rc);

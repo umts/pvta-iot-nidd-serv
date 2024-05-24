@@ -58,7 +58,6 @@ int download_firmware_github(FILE **fptr) {
   char user_agent[19] = "licurl/";
   RecvData header_data = {NULL, 0};
 
-  // header_data.size = 0;
   curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, heap_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_data);
   curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
