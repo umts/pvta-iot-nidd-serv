@@ -10,11 +10,20 @@ typedef struct RecvData {
   size_t size;
 } RecvData;
 
-/** @fn const size_t mem_write_callback(const char *buffer, const size_t size,
- * size_t nitems, const void *userdata);
+/** @fn const size_t stack_mem_write_callback(const char *buffer, const size_t
+ * size, size_t nitems, const void *userdata);
  *  @brief User defined curl callback for writing response data to stack mem.
  */
-size_t mem_write_callback(
+size_t stack_mem_write_callback(
+    const char *buffer, const size_t size, const size_t nitems,
+    const void *userdata
+);
+
+/** @fn const size_t heap_mem_write_callback(const char *buffer, const size_t
+ * size, size_t nitems, const void *userdata);
+ *  @brief User defined curl callback for writing response data to heap mem.
+ */
+size_t heap_mem_write_callback(
     const char *buffer, const size_t size, const size_t nitems,
     const void *userdata
 );

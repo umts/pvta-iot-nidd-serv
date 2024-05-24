@@ -1,9 +1,6 @@
 /** @headerfile vzw_connect.h */
 #include "vzw_connect.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #define JSMN_HEADER
 
 #include <base64.h>
@@ -12,15 +9,13 @@
 #include <curl/header.h>
 #include <jsmn.h>
 #include <stddef.h>
-#include <stop.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../config/vzw_secrets.h"
 #include "curl_callbacks.h"
 #include "json_helpers.h"
-
-#define REC_BUF_SIZE 1024
-#define REC_HEADER_SIZE 1024
 
 // char *stop_to_nidd_str(Stop *stop) {}
 
@@ -70,12 +65,8 @@ int get_vzw_auth_token(const char *vzw_auth_keys, char *vzw_auth_token) {
   CURL *curl = curl_easy_init();
   CURLcode res;
   struct curl_slist *headers = NULL;
-
-  char header_buf[REC_HEADER_SIZE];
-  char recv_buf[REC_BUF_SIZE];
-
-  RecvData header_data = {header_buf, 0};
-  RecvData response_data = {recv_buf, 0};
+  RecvData header_data = {NULL, 0};
+  RecvData response_data = {NULL, 0};
 
   char encoded_token[ENC_LEN];
   char auth_token_field[AUTH_TOKEN_FIELD_SIZE];
@@ -91,9 +82,9 @@ int get_vzw_auth_token(const char *vzw_auth_keys, char *vzw_auth_token) {
       curl, CURLOPT_URL, "https://thingspace.verizon.com/api/ts/v1/oauth2/token"
   );
 
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, mem_write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, heap_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
-  curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, mem_write_callback);
+  curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, heap_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_data);
 
   int base64StringLen =
@@ -121,12 +112,14 @@ int get_vzw_auth_token(const char *vzw_auth_keys, char *vzw_auth_token) {
     goto fail;
   }
 
-  res = extract_token(recv_buf, vzw_auth_token, "access_token");
+  res = extract_token(response_data.response, vzw_auth_token, "access_token");
   if (res != CURLE_OK) {
     PRINTERR("Failed to get VZW Auth Token");
   }
 
 fail:
+  free(header_data.response);
+  free(response_data.response);
   curl_slist_free_all(headers);
   curl_easy_cleanup(curl);
 
@@ -149,12 +142,8 @@ int get_vzw_m2m_token(
   CURL *curl = curl_easy_init();
   CURLcode res;
   struct curl_slist *headers = NULL;
-
-  char header_buf[REC_HEADER_SIZE];
-  char recv_buf[REC_BUF_SIZE];
-
-  RecvData header_data = {header_buf, 0};
-  RecvData response_data = {recv_buf, 0};
+  RecvData header_data = {NULL, 0};
+  RecvData response_data = {NULL, 0};
 
   char post_field[LOGIN_FIELD_SIZE];
   size_t header_token_field_size =
@@ -184,9 +173,9 @@ int get_vzw_m2m_token(
       "https://thingspace.verizon.com/api/m2m/v1/session/login"
   );
 
-  curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, mem_write_callback);
+  curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, heap_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_data);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, mem_write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, heap_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
 
   post_field[0] = '{';
@@ -214,12 +203,14 @@ int get_vzw_m2m_token(
     goto fail;
   }
 
-  res = extract_token(recv_buf, vzw_m2m_token, "sessionToken");
+  res = extract_token(response_data.response, vzw_m2m_token, "sessionToken");
   if (res != CURLE_OK) {
     PRINTERR("Failed to get VZW M2M Token");
   }
 
 fail:
+  free(header_data.response);
+  free(response_data.response);
   curl_slist_free_all(headers);
   curl_easy_cleanup(curl);
 

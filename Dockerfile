@@ -74,7 +74,7 @@ RUN set -ex \
   && apt-get update \
   && if [ "$debug" = "true" ]; then \
     apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential \
-    libssl-dev libpcre2-dev curl pkg-config vim libcurl4-openssl-dev \
+    libssl-dev libpcre2-dev curl pkg-config libcurl4-openssl-dev vim libasan8\
     && echo "alias ls='ls -F --color=auto'" >> /root/.bashrc \
     && echo "alias grep='grep -nI --color=auto'" >> /root/.bashrc; \
   else \
@@ -178,7 +178,10 @@ RUN --mount=type=secret,id=vzw_secrets.h set -x \
 
 # Compile and link C app against libunit.a
 Run set -x \
-  && make -j $(eval $ncpu) \
+  && if [ "$debug" = "true" ]; \
+    then make -j $(eval $ncpu) CC=gcc  EXTRA_CFLAGS=-g1\ -fsanitize=address EXTRA_LDFLAGS=-lasan; \
+    else make -j $(eval $ncpu) CC=gcc; \
+  fi \
   && make install \
   && rm -f config/vzw_secrets.h \
   && cd \

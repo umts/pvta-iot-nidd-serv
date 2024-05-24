@@ -13,10 +13,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include "../config/vzw_secrets.h"
 #include "firmware_requests.h"
 #include "http_get_stop.h"
+#include "json_helpers.h"
 #include "parse_stop_json.h"
 #include "vzw_connect.h"
 
@@ -41,7 +43,7 @@ static unsigned int minutes_to_departure(Departure *departure) {
 }
 
 static int get_vzw_tokens(char *vzw_auth_token, char *vzw_m2m_token) {
-  int rc;
+  int rc = 0;
 
   rc = get_vzw_auth_token(VZW_PUBLIC_KEY ":" VZW_PRIVATE_KEY, vzw_auth_token);
   if (nxt_slow_path(rc != NXT_UNIT_OK)) {
@@ -322,7 +324,7 @@ fail:
 }
 
 void request_router(nxt_unit_request_info_t *req_info) {
-  int rc;
+  int rc = 0;
   nxt_unit_sptr_t *rp = &req_info->request->path;
 
   void *path = nxt_unit_sptr_get(rp);

@@ -1,4 +1,5 @@
 app
+build.log
 assets/
 sample
 libunit.a

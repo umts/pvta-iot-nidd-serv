@@ -1,10 +1,13 @@
 CC ?= gcc
 DIR ?= .
 app_bin_dir ?= /usr/bin
+EXTRA_CFLAGS ?=
+EXTRA_LDFLAGS ?=
 
 CFLAGS ?= -O3 -fstack-protector-strong -Wall -Wextra -Wformat -Winline -Werror=format-security \
-	-D_FORTIFY_SOURCE=2 -march=native -fPIC -I$(DIR)/include
-LDFLAGS ?= -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie -L$(DIR) -L$(DIR)/lib -lc -lpthread -lcurl -lunit -lnaah64
+	-D_FORTIFY_SOURCE=2 -march=native -fPIC -I$(DIR)/include -fanalyzer $(EXTRA_CFLAGS)
+LDFLAGS ?= -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie -L$(DIR) -L$(DIR)/lib -lc -lpthread \
+	-lcurl -lunit -lnaah64 $(EXTRA_LDFLAGS)
 
 VPATH = $(DIR)/src:$(DIR)/include
 

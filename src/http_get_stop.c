@@ -59,11 +59,11 @@ int http_request_stop_json(
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
   /* we want the headers be written to this file handle */
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, mem_write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, stack_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_body);
 
   /* we want the body be written to this file handle instead of stdout */
-  curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, mem_write_callback);
+  curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, stack_mem_write_callback);
   curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void *)&recv_headers);
 
   /*curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");*/
