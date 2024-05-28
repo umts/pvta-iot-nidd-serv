@@ -10,7 +10,7 @@
 #include "curl_callbacks.h"
 
 #define REPO "umts/embedded-departure-board"
-#define REPO_URL "https://github.com/" REPO "/releases/latest"
+#define RELEASES_URL "https://github.com/" REPO "/releases/"
 
 #define APP_UPDATE_DIR "/srv/firmware/"
 #define APP_UPDATE_NAME_PARTIAL "_app_update.bin"
@@ -34,7 +34,7 @@ static CURLcode latest_firmware_tag(
 
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 0L);
   curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-  curl_easy_setopt(curl, CURLOPT_URL, REPO_URL);
+  curl_easy_setopt(curl, CURLOPT_URL, RELEASES_URL "latest");
 
   PRINTDBG("Fetching latest firmware tag...");
   res = curl_easy_perform(curl);
@@ -96,8 +96,8 @@ int download_firmware_github(FILE **fptr) {
   }
 
   char
-      url[sizeof(REPO_URL) + sizeof(latest_tag) + sizeof("/app_update.bin") -
-          3] = REPO_URL;
+      url[sizeof(RELEASES_URL) + sizeof("download/") + sizeof(latest_tag) +
+          sizeof("/app_update.bin") - 3] = RELEASES_URL "download/";
 
   p = stpcpy((url + strlen(url)), &latest_tag[0]);
   (void)stpcpy(p, "/app_update.bin");
